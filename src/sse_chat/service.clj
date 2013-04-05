@@ -3,26 +3,42 @@
               [io.pedestal.service.http.route :as route]
               [io.pedestal.service.http.body-params :as body-params]
               [io.pedestal.service.http.route.definition :refer [defroutes]]
+              [clojure.java.io :as io]
+              [comb.template :as comb]
               [io.pedestal.service.interceptor :refer [defon-response]]
               [ring.util.response :as ring-resp]))
 
-(defn about-page
-  [request]
-  (ring-resp/response (format "Clojure %s" (clojure-version))))
+(defn- render-erb
+  "Renders an erb file with optional bindings."
+  ([template] (render-erb template {}))
+  ([template template-bindings]
+     (comb/eval (slurp (io/resource template)) template-bindings)))
+
+(defn- erb
+  "Given an erb file's basename, renders it wrapped in a default layout"
+  [& args]
+  (let [basename (format "public/%s.erb" (name (first args)))]
+    (ring-resp/response (render-erb "public/layout.erb"
+                                {:yield (apply render-erb (cons basename (rest args)))}))))
 
 (defn home-page
   [request]
-  (ring-resp/response "Hello World!"))
+  (if-let [user (-> request :query-params :user)]
+    (erb :chat {:user user})
+    (erb :login)))
+
+(defn subscribe
+  [request]
+  (ring-resp/response "SUBSCRIBE"))
 
 (defon-response html-content-type
   [response]
   (ring-resp/content-type response "text/html"))
 
 (defroutes routes
-  [[["/" {:get home-page}
+  [[["/" {:get home-page :post subscribe}
      ;; Set default interceptors for /about and any other paths under /
-     ^:interceptors [(body-params/body-params) html-content-type]
-     ["/about" {:get about-page}]]]])
+     ^:interceptors [(body-params/body-params) html-content-type]]]])
 
 ;; You can use this fn or a per-request fn via io.pedestal.service.http.route/url-for
 (def url-for (route/url-for-routes routes))
