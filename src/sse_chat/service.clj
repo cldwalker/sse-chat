@@ -3,11 +3,13 @@
               [io.pedestal.service.http.route :as route]
               [io.pedestal.service.http.body-params :as body-params]
               [io.pedestal.service.http.route.definition :refer [defroutes]]
+              [io.pedestal.service.interceptor :refer [defon-response]]
+              [io.pedestal.service.http.sse :as sse]
               [clojure.java.io :as io]
               [comb.template :as comb]
-              [io.pedestal.service.interceptor :refer [defon-response]]
               [ring.util.response :as ring-resp]))
 
+;;; helpers
 (defn- render-erb
   "Renders an erb file with optional bindings."
   ([template] (render-erb template {}))
@@ -19,26 +21,52 @@
   [& args]
   (let [basename (format "public/%s.erb" (name (first args)))]
     (ring-resp/response (render-erb "public/layout.erb"
-                                {:yield (apply render-erb (cons basename (rest args)))}))))
+                                    {:yield (apply render-erb (cons basename (rest args)))}))))
 
+(defon-response html-content-type
+  [response]
+  (ring-resp/content-type response "text/html"))
+
+;;; endpoints and sse setup
 (defn home-page
   [request]
   (if-let [user (-> request :query-params :user)]
     (erb :chat {:user user})
     (erb :login)))
 
-(defn subscribe
-  [request]
-  (ring-resp/response "SUBSCRIBE"))
+(def subscribers (atom []))
 
-(defon-response html-content-type
-  [response]
-  (ring-resp/content-type response "text/html"))
+(defn add-subscriber [context]
+  (swap! subscribers conj context))
+
+#_(defn send-counter
+  "Counts down to 0, sending value of counter to sse context and
+  recursing on a different thread; ends event stream when counter
+  is 0."
+  [ctx count]
+  (sse/send-event ctx "count" (str count ", thread: " (.getId (Thread/currentThread))))
+  (Thread/sleep 2000)
+  (if (> count 0)
+    (future (send-counter ctx (dec count)))
+    (sse/end-event-stream ctx)))
+
+(defn sse-stream-ready
+  "Starts sending counter events to client."
+  [ctx]
+  (add-subscriber ctx))
+
+(defn publish
+  [request]
+  #_(prn "POST:" (-> request :params (get "msg")) (count @subscribers) @subscribers)
+  (doseq [sse-context @subscribers]
+    (sse/send-event sse-context "msg" (-> request :params (get "msg"))))
+  {:status 204})
 
 (defroutes routes
-  [[["/" {:get home-page :post subscribe}
+  [[["/" {:get home-page :post publish}
      ;; Set default interceptors for /about and any other paths under /
-     ^:interceptors [(body-params/body-params) html-content-type]]]])
+     ^:interceptors [(body-params/body-params) html-content-type]
+     ["/stream" {:get [::stream (sse/sse-setup sse-stream-ready)]}]]]])
 
 ;; You can use this fn or a per-request fn via io.pedestal.service.http.route/url-for
 (def url-for (route/url-for-routes routes))
