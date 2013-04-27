@@ -1,7 +1,5 @@
 ## Description
 
-*Work in Progress*: Needs more work
-
 This is a pedestal-service port of sinatra's [sse
 chat example](https://github.com/sinatra/sinatra/blob/master/examples/chat.rb).
 For official sse samples, see
