@@ -5,6 +5,7 @@
               [io.pedestal.service.http.route.definition :refer [defroutes]]
               [io.pedestal.service.interceptor :refer [defon-response]]
               [io.pedestal.service.http.sse :as sse]
+              [io.pedestal.service.log :as log]
               [clojure.java.io :as io]
               [comb.template :as comb]
               [ring.util.response :as ring-resp]))
@@ -37,10 +38,19 @@
 (defn add-subscriber [context]
   (swap! subscribers conj context))
 
+(defn remove-subscriber [context]
+  (log/info :msg "Removing nonexistent user")
+  (swap! subscribers #(remove #{context} %))
+  ;; should be removed but fails unexpectedly
+  #_(sse/end-event-stream context))
+
 (defn publish
   [request]
   (doseq [sse-context @subscribers]
-    (sse/send-event sse-context "message" (-> request :form-params (get "msg"))))
+    (try
+      (sse/send-event sse-context "message" (-> request :form-params (get "msg")))
+      (catch java.io.IOException e
+        (remove-subscriber sse-context))))
   {:status 204})
 
 (defroutes routes
