@@ -4,7 +4,7 @@ This is a pedestal-service port of sinatra's [sse
 chat example](https://github.com/sinatra/sinatra/blob/master/examples/chat.rb).
 This chat can be used from multiple tabs in the same browser.
 
-Try it out [on heroku](http://pedestal-sse-chat.herokuapp.com/)!
+Chat [on heroku](http://pedestal-sse-chat.herokuapp.com/)!
 
 ## Getting Started
 
