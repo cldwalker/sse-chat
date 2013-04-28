@@ -5,26 +5,9 @@
               [io.pedestal.service.http.route.definition :refer [defroutes]]
               [io.pedestal.service.http.sse :as sse]
               [io.pedestal.service.log :as log]
-              [clojure.java.io :as io]
-              [comb.template :as comb]
-              [ring.util.response :as ring-resp]))
+              [sse-chat.render :refer [erb]]))
 
-;;; helpers
-(defn- render-erb
-  "Renders an erb file with optional bindings."
-  ([template] (render-erb template {}))
-  ([template template-bindings]
-     (comb/eval (slurp (io/resource template)) template-bindings)))
-
-(defn- erb
-  "Given an erb file's basename, renders it wrapped in a default layout"
-  [& args]
-  (let [basename (format "public/%s.erb" (name (first args)))]
-    (ring-resp/response (render-erb "public/layout.erb"
-                                    {:yield (apply render-erb (cons basename (rest args)))}))))
-
-;;; endpoints and sse setup
-(defn home-page
+(defn chat-page
   [request]
   (if-let [user (-> request :query-params :user)]
     (erb :chat {:user user})
@@ -50,7 +33,7 @@
   {:status 204})
 
 (defroutes routes
-  [[["/" {:get home-page :post publish}
+  [[["/" {:get chat-page :post publish}
      ^:interceptors [(body-params/body-params) bootstrap/html-body]
      ["/stream" {:get [::stream (sse/start-event-stream add-subscriber)]}]]]])
 
