@@ -3,7 +3,6 @@
               [io.pedestal.service.http.route :as route]
               [io.pedestal.service.http.body-params :as body-params]
               [io.pedestal.service.http.route.definition :refer [defroutes]]
-              [io.pedestal.service.interceptor :refer [defon-response]]
               [io.pedestal.service.http.sse :as sse]
               [io.pedestal.service.log :as log]
               [clojure.java.io :as io]
@@ -27,11 +26,9 @@
 ;;; endpoints and sse setup
 (defn home-page
   [request]
-  (->
-   (if-let [user (-> request :query-params :user)]
-     (erb :chat {:user user})
-     (erb :login))
-   (ring-resp/content-type "text/html")))
+  (if-let [user (-> request :query-params :user)]
+    (erb :chat {:user user})
+    (erb :login)))
 
 (def subscribers (atom []))
 
@@ -55,8 +52,8 @@
 
 (defroutes routes
   [[["/" {:get home-page :post publish}
-     ^:interceptors [(body-params/body-params)]
-     ["/stream" {:get [::stream (sse/sse-setup add-subscriber)]}]]]])
+     ^:interceptors [(body-params/body-params) bootstrap/html-body]
+     ["/stream" {:get [::stream (sse/start-event-stream add-subscriber)]}]]]])
 
 ;; You can use this fn or a per-request fn via io.pedestal.service.http.route/url-for
 (def url-for (route/url-for-routes routes))
