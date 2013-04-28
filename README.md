@@ -17,6 +17,7 @@ To configure logging see config/logback.xml. By default, the app logs to stdout 
 To learn more about configuring Logback, read its [documentation](http://logback.qos.ch/documentation.html).
 
 ## Links
-* [chat](https://github.com/pedestal/samples/tree/master/chat) - official sse chat example
-*
-  [server-sent-events](https://github.com/pedestal/samples/tree/master/server-sent-events) - official simple sse example
+
+* [chat](https://github.com/pedestal/samples/tree/master/chat) -
+  official sse chat example
+* [server-sent-events](https://github.com/pedestal/samples/tree/master/server-sent-events) - official simple sse example
