@@ -36,10 +36,9 @@
   (swap! subscribers conj context))
 
 (defn remove-subscriber [context]
-  (log/info :msg "Removing nonexistent user")
+  (log/info :msg "Removing user")
   (swap! subscribers #(remove #{context} %))
-  ;; should be removed but fails unexpectedly
-  #_(sse/end-event-stream context))
+  (sse/end-event-stream context))
 
 (defn publish
   [request]

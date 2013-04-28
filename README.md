@@ -16,7 +16,3 @@ and [chat](https://github.com/pedestal/samples/tree/master/chat).
 
 To configure logging see config/logback.xml. By default, the app logs to stdout and logs/.
 To learn more about configuring Logback, read its [documentation](http://logback.qos.ch/documentation.html).
-
-## Limitations
-Removing subscribers doesn't fully work so occasionally heartbeats
-from nonexistent users will clutter error logs.
