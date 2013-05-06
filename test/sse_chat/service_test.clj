@@ -17,8 +17,7 @@
     (is (.contains
          (:body (response-for service :get "/"))
          "User Name:")))
-  ;; TODO: fix regex bug
-  #_(testing "with name prompts you to chat"
+  (testing "with name prompts you to chat"
     (is (.contains
          (:body (response-for service :get "/?user=me"))
          "type message here.."))))
